@@ -1,0 +1,23 @@
+{
+  "name": "liquid",
+  "version": "1.0.0",
+  "description": "",
+  "main": "liquid.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node liquid.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rakesh-talukdar/liquid-poc.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rakesh-talukdar/liquid-poc/issues"
+  },
+  "homepage": "https://github.com/rakesh-talukdar/liquid-poc#readme",
+  "dependencies": {
+    "liquidjs": "^10.15.0"
+  }
+}
