@@ -1,74 +1,108 @@
 const { Liquid } = require('liquidjs');
 
-const printNode = (node) => {
-    console.log('Test >>>', {node, token: node.token.getText(), type: node.type});
+// const printNode = (node) => {
+//     console.log('Test >>>', {node, token: node.token.getText(), type: node.type});
   
-    if (node.childNodes) {
-        node.childNodes.forEach((child, i) => printNode(child));
+//     if (node.childNodes) {
+//         node.childNodes.forEach((child, i) => printNode(child));
+//     }
+// }
+
+//   const printTagsAndExpressions = (node, indent = 0) => {
+//     const indentStr = ' '.repeat(indent);
+//     // console.log('Test >>> ', {tokenText: node.token.getText()});
+//     if (node.name) {
+//       console.log(`${indentStr}Tag: ${node.name}`);
+//       if (node.token && node.token.content) {
+//         console.log(`${indentStr}  Expression: ${node.token.content} \n tag: ${node.token.getText()}`);
+//       }
+//     }
+  
+//     if (node.children) {
+//       for (const child of node.children) {
+//         printTagsAndExpressions(child, indent + 2);
+//       }
+//     }
+//   };
+  
+// const extractTagsAndObjects = (node, result = { tags: [], objects: [] }) => {
+//     if (node.name) {
+//       result.tags.push(node.name);
+//       if (node.token && node.token.content) {
+//         result.objects.push(node.token.content);
+//       }
+//     }
+  
+//     if (node.token && node.token.value) {
+//     //   const regex = /{{(.*?)}}/g;
+//       const regex = /{%\s*(.*?)\s*%}|{{\s*(.*?)\s*}}/g;
+
+//       let match;
+//       while ((match = regex.exec(node.token.value)) !== null) {
+//         result.objects.push(match[1].trim());
+//       }
+//     }
+  
+//     if (node.children) {
+//       for (const child of node.children) {
+//         extractTagsAndObjects(child, result);
+//       }
+//     }
+  
+//     return result;
+//   };
+
+const getForLoopTags = (token, tags) => {    
+    const matches = token.input.match(/{{\s*(.*?)\s*}}/g);
+    if (matches) {
+        matches.forEach(match => {
+            const tag = match.replace(/{{\s*|\s*}}/g, '');
+            tags.push(tag);
+        });
     }
+    return tags;
+};
+const getNonIterativeTags = (token, tags) => { 
+    const splittedContent = token.content.split(' ');
+    console.log("Test >>> getNonIterativeTags: ", {splittedContent, token: token.getText()});
+    return tags.push(splittedContent[1]);
 }
 
-  const printTagsAndExpressions = (node, indent = 0) => {
-    const indentStr = ' '.repeat(indent);
-    // console.log('Test >>> ', {tokenText: node.token.getText()});
-    if (node.name) {
-      console.log(`${indentStr}Tag: ${node.name}`);
-      if (node.token && node.token.content) {
-        console.log(`${indentStr}  Expression: ${node.token.content} \n tag: ${node.token.getText()}`);
-      }
-    }
-  
-    if (node.children) {
-      for (const child of node.children) {
-        printTagsAndExpressions(child, indent + 2);
-      }
-    }
-  };
-  
-const extractTagsAndObjects = (node, result = { tags: [], objects: [] }) => {
-    if (node.name) {
-      result.tags.push(node.name);
-      if (node.token && node.token.content) {
-        result.objects.push(node.token.content);
-      }
-    }
-  
-    if (node.token && node.token.value) {
-    //   const regex = /{{(.*?)}}/g;
-      const regex = /{%\s*(.*?)\s*%}|{{\s*(.*?)\s*}}/g;
-
-      let match;
-      while ((match = regex.exec(node.token.value)) !== null) {
-        result.objects.push(match[1].trim());
-      }
-    }
-  
-    if (node.children) {
-      for (const child of node.children) {
-        extractTagsAndObjects(child, result);
-      }
-    }
-  
-    return result;
-  };
-
-  const extractTagsAndObjects2 = (content) => {
-    const tagRegex = /{%\s*(.*?)\s*%}/g;
-    const objectRegex = /{{\s*(.*?)\s*}}/g;
-
-    const tags = [];
-    let match;
-    while ((match = tagRegex.exec(content)) !== null) {
-        tags.push(match[1].trim());
-    }
-
-    const objects = [];
-    while ((match = objectRegex.exec(content)) !== null) {
-        objects.push(match[1].trim());
-    }
-
-    return { tags, objects };
-};
+const extractTemplateVars = function (parsedTemplate) {
+    const tags = []; 
+        const handles = parsedTemplate
+        .map((node, i) => {
+                const {token} = node;
+                // console.log({node, token})
+                collection = node.collection;
+                const tokenConstructorName = token.constructor.name;
+                const tokenName = token?.name;
+                // if (tokenConstructorName === 'OutputToken') { 
+                //     tags.push(token.content || token.getText());
+                //     // console.log({token: token.getText(), kind: token.kind, content: token.content, name: token.name, input: token.input});
+                // } else 
+                if (tokenConstructorName === 'TagToken') {
+                    // console.log({token: token.getText(), kind: token.kind, content: token.content, name: token.name});
+                    if (tokenName !== 'for') {
+                        getNonIterativeTags(token, tags);
+                    }
+                    
+                    if(tokenName === 'for') {
+                        console.log("Test >>> tkn", {node: node.variable, name: token?.name, val: token?.input.slice(token?.begin, token?.end)});
+                        tags.push(node.variable)
+                        tags.push(node.token?.input.slice(collection?.begin, collection?.end));
+                        getForLoopTags(token, tags);
+                        // console.log({token: token.getText(), token});
+                    }
+                }
+                    // const TokenKind = token.kind;
+                    // if ([4,8].includes(token?.kind)) {
+                        //     return token.content;
+                        // }
+    })
+    .filter((item) => item != null)
+    return tags;
+  }
 
   
   
@@ -77,15 +111,18 @@ const extractTagsAndObjects = (node, result = { tags: [], objects: [] }) => {
       const engine = new Liquid();
       const parseTree = engine.parse(content);
     //   parseTree.forEach(node => printTagsAndExpressions(node));
-      console.log("Test >>> parseTree: ", parseTree);
+    //   console.log("Test >>> parseTree: ", parseTree);
 
     // let result = { tags: [], objects: [] };
     // parseTree.forEach(node => extractTagsAndObjects(node, result));
     // parseTree.forEach(node => printTagsAndExpressions(node));
 
-    const result = extractTagsAndObjects2(content);
-    console.log("Tags: ", result.tags);
-    console.log("Objects: ", result.objects);
+    // const result = extractTagsAndObjects2(content);
+    const result = extractTemplateVars(parseTree);
+    // const result = extractVariables(parseTree);
+    // console.log("Tags: ", result.tags);
+    // console.log("Objects: ", result.objects);
+    console.log("Variables: ", result);
     } catch (error) {
       console.log("Error: ", error);
     }
@@ -101,12 +138,13 @@ const template = `
         Hi Stranger
     {% endif %}
 
-    {% for abc in challenges %}
+    {% for challenge in challenges %}
         Mission: {{challenge.mission}}
         Progress: {{challenge.progress}}
         Weekly checkin: {{challenge.weekly_checkin}}
         =====================================
     {% endfor %}
+    
 
     {% assign handle = "cake" %}
     {% case handle %}
@@ -119,6 +157,7 @@ const template = `
     {% endcase %}
 `;
 
+const tags = ['first_name', 'first_name', 'challenges', 'handle', 'challenge.mission`', 'challenge.progress', 'challenge.weekly_checkin', ];
 const template2 = `
 {% comment %}
 This is a comment and will not be rendered in the output
@@ -178,3 +217,18 @@ This text will not be processed by Liquid.
 `;
 
 validateLiquidContent(template);
+
+challenges = [{
+    mission: 'Mission 1',
+    progress: 'In progress',
+    userid: '123',
+},
+{
+    mission: 'Mission 2',
+    progress: 'Completed',
+},
+{
+    mission: 'Mission 3',
+    progress: 'In progress',
+},
+];
